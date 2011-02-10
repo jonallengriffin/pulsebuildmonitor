@@ -257,7 +257,7 @@ class PulseBuildMonitor(object):
       raise Exception('label not defined')
     self.pulse = consumers.BuildConsumer(applabel=self.label)
     self.pulse.configure(topic='build.#.step.#.maybe_rebooting.finished',
-                         callback=self.onPulseMessage,
+                         callback=self.pulseMessageReceived,
                          durable=self.durable)
 
     self.unittestRe = re.compile(r'build\.(%s[-|_](.*?)(-debug|-o-debug)?[-|_](test|unittest)-(.*?))\.(\d+)\.' % self.tree)
@@ -323,15 +323,22 @@ class PulseBuildMonitor(object):
     """
     pass
 
-  def onPulseMessage(self, data, message):
+  def onPulseMessage(self, data):
+    """Called for every pulse message that we receive; 'data' is the
+       unprocessed payload from pulse.
+    """
+    pass
+
+  def pulseMessageReceived(self, data, message):
     """Called whenever our pulse consumer receives a message.
     """
 
     try:
+      self.onPulseMessage(data)
+
       # we determine if this message is of interest to us by examining
       # the routing_key
       key = data['_meta']['routing_key']
-      print key
 
       # see if this message is for our tree; if not, discard it
       if not self.tree in key:
