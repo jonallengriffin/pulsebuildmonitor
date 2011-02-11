@@ -17,8 +17,12 @@ from webob import exc
 from daemon import createDaemon
 
 class LatestBuildMonitor(PulseBuildMonitor, Thread):
-  def __init__(self, logger=None, port=8034, **kwargs):
+  def __init__(self, dir=None, logger=None, port=8034, **kwargs):
     self.logger = logger
+    if dir:
+      self.dir = dir
+    else:
+      self.dir = os.path.abspath(os.path.dirname(__file__))
     self.port = port
     self.builds = {}
     PulseBuildMonitor.__init__(self, logger=self.logger, **kwargs)
@@ -27,7 +31,7 @@ class LatestBuildMonitor(PulseBuildMonitor, Thread):
   def __call__(self, environ, start_response):
     req = Request(environ)
     if req.url.find('README') > -1:
-      readme = os.path.join(os.path.dirname(__file__), 'README.html')
+      readme = os.path.join(self.dir, 'README.html')
       resp = Response(content_type='text/html')
       resp.body = open(readme, 'r').read()
     else:
@@ -89,6 +93,8 @@ if __name__ == '__main__':
                     help='run as daemon')
   options, args = parser.parse_args()
 
+  dir = os.path.abspath(os.path.dirname(__file__))
+
   if options.daemon:
     createDaemon(options.pidfile, options.logfile)
 
@@ -104,7 +110,8 @@ if __name__ == '__main__':
     fp.write("%d\n" % os.getpid())
     fp.close()
 
-  monitor = LatestBuildMonitor(logger=logger,
+  monitor = LatestBuildMonitor(dir=dir,
+                               logger=logger,
                                port=options.port,
                                label='woo@mozilla.com|latest_build_monitor_' + socket.gethostname())
   monitor.start()
