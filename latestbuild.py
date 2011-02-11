@@ -14,10 +14,10 @@ from threading import Thread
 from webob import Request, Response, html_escape
 from webob import exc
 
-#from daemon import createDaemon
+from daemon import createDaemon
 
 class LatestBuildMonitor(PulseBuildMonitor, Thread):
-  def __init__(self, logger=None, port=8014, **kwargs):
+  def __init__(self, logger=None, port=8034, **kwargs):
     self.logger = logger
     self.port = port
     self.builds = {}
@@ -25,37 +25,57 @@ class LatestBuildMonitor(PulseBuildMonitor, Thread):
     Thread.__init__(self)
 
   def __call__(self, environ, start_response):
-    resp = Response(content_type='application/json')
-    resp.status_int = 200
-    resp.body = json.dumps(self.get_latest_build())
-
+    req = Request(environ)
+    if req.url.find('README') > -1:
+      readme = os.path.join(os.path.dirname(__file__), 'README.html')
+      resp = Response(content_type='text/html')
+      resp.body = open(readme, 'r').read()
+    else:
+      resp = Response(content_type='application/json')
+      resp.status_int = 200
+      resp.body = json.dumps(self.get_latest_build())
     return resp(environ, start_response)
 
   def onBuildComplete(self, builddata):
+    #print "================================================================="
+    #print json.dumps(builddata)
+    #print "================================================================="
     if builddata['tree'] not in self.builds:
       self.builds[builddata['tree']] = {}
-    if builddata['platform'] not in self.builds[builddata['tree']]:
-      self.builds[builddata['tree']][builddata['platform']] = {}
-    self.builds[builddata['tree']][builddata['platform']].update({builddata['buildtype']:  builddata['buildurl']})
+    if builddata['branch'] not in self.builds[builddata['tree']]:
+      self.builds[builddata['tree']][builddata['branch']] = {}
+    if builddata['platform'] not in self.builds[builddata['tree']][builddata['branch']]:
+      self.builds[builddata['tree']][builddata['branch']][builddata['platform']] = {}
+    self.builds[builddata['tree']][builddata['branch']][builddata['platform']].update({builddata['buildtype']:  builddata['buildurl']})
 
   def onPulseMessage(self, data):
     key = data['_meta']['routing_key']
-    print key
+    if 'mozilla-central' in key:
+      #print key
+      pass
 
   def get_latest_build(self):
     return self.builds
 
   def run(self):
-    from wsgiref.simple_server import make_server
-    httpd = make_server('127.0.0.1', self.port, self)
+    from wsgiref.simple_server import make_server, WSGIRequestHandler
+
+    class QuietHandler(WSGIRequestHandler):
+      """Custom WSGIRequestHandler class that doesn't do any logging.
+      """
+      def log_request(*args, **kw):
+        pass
+      def log_error(*args, **kw):
+        pass
+      def log_message(*args, **kw):
+        pass
+
+    httpd = make_server('127.0.0.1', self.port, self, handler_class=QuietHandler)
     if self.logger:
       self.logger.info('Serving on http://127.0.0.1:%s' % options.port)
     elif not options.daemon:
       print 'Serving on http://127.0.0.1:%s' % options.port
-    try:
-      httpd.serve_forever()
-    except KeyboardInterrupt:
-      print '^C'
+    httpd.serve_forever()
 
 if __name__ == '__main__':
   import optparse

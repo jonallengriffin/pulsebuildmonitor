@@ -287,6 +287,8 @@ class PulseBuildMonitor(object):
     """Called whenever a buildbot build is finished.
 
        builddata is a dict with the following keys:
+        tree:      mozilla-central, etc.
+        branch:    the hg branch the build was made from
         builddate: the buildbot builddate in seconds since epoch format
         buildid:   the buildbot buildid
         timestamp: the datetime the pulse message was received, in
@@ -306,6 +308,7 @@ class PulseBuildMonitor(object):
 
        builddata is a dict with the following keys:
         tree:        mozilla-central, etc.
+        branch:    the hg branch the build was made from
         os:          specific OS, e.g., win7, xp, fedora64, snowleopard
         platform:    generic platform, e.g., linux, linux64, win32, macosx64
         buildtype:   one of: debug, opt
@@ -352,6 +355,7 @@ class PulseBuildMonitor(object):
                     'platform': None,
                     'builddate': None,
                     'buildurl': None,
+                    'branch': None,
                     'tree': self.tree,
                     'timestamp': datetime.datetime.now().strftime('%Y%m%d%H%M%S')
                   }
@@ -373,6 +377,10 @@ class PulseBuildMonitor(object):
         # look for build url
         elif property[0] == 'packageUrl' or property[0] == 'build_url':
           builddata['buildurl'] = property[1]
+
+        # look for hg branch
+        elif property[0] == 'branch':
+          builddata['branch'] = property[1]
 
       # see if this message is for one of our platforms
       if self.platforms is not None and builddata['platform'] not in self.platforms:

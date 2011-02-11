@@ -1,0 +1,37 @@
+<html>
+<body>
+<h1>Get Latest Tinderbox Builds</h1>
+This is a simple REST API which you can use to retrieve the latest tinderbox
+builds available on the mozilla FTP site.  The return data is a JSON object
+with the following structure:
+
+<pre>
+{
+  tree: {
+    branch: {
+      platform: {
+        buildtype: buildurl
+      }
+    }
+  }
+}
+</pre>
+
+<ul>
+  <li>tree: currently only mozilla-central is returned
+  <li>branch: either mozilla-central or mozilla-central-mobile-browser
+  <li>platform: e.g., win32, linux, linux64, etc
+  <li>buildtype: either opt or debug
+</ul>
+
+So, if you knew you wanted the url of the latest win32 opt build on
+mozilla-central, you could retrieve the JSON and do something like:
+
+<pre>
+  url = data['mozilla-central']['mozilla-central']['win32']['opt']
+</pre>
+
+<a href="../">Get the latest builds JSON.</a>
+
+</body>
+</html>
