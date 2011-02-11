@@ -50,9 +50,7 @@ class LatestBuildMonitor(PulseBuildMonitor, Thread):
 
   def onPulseMessage(self, data):
     key = data['_meta']['routing_key']
-    if 'mozilla-central' in key:
-      #print key
-      pass
+    #print key
 
   def get_latest_build(self):
     return self.builds

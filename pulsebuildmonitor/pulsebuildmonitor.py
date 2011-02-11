@@ -296,6 +296,7 @@ class PulseBuildMonitor(object):
         platform:  generic platform, e.g., linux, linux64, win32, macosx64
         buildurl:  full url to the build on http://stage.mozilla.org
         buildtype: one of: debug, opt
+        testsurl:  full url to the test bundle
         key:       the pulse routing_key that was sent with this message
     """
     pass
@@ -308,7 +309,7 @@ class PulseBuildMonitor(object):
 
        builddata is a dict with the following keys:
         tree:        mozilla-central, etc.
-        branch:    the hg branch the build was made from
+        branch:      the hg branch the build was made from
         os:          specific OS, e.g., win7, xp, fedora64, snowleopard
         platform:    generic platform, e.g., linux, linux64, win32, macosx64
         buildtype:   one of: debug, opt
@@ -316,6 +317,7 @@ class PulseBuildMonitor(object):
         test:        the name of the test, e.g., reftest, mochitest-other
         timestamp:   the datetime the pulse message was received, in 
                      'YYYYMMDDHHMMSS' format
+        testsurl:    full url to the test bundle
         logurl:      full url to the logfile on http://stage.mozilla.org
     """
     pass
@@ -356,6 +358,7 @@ class PulseBuildMonitor(object):
                     'builddate': None,
                     'buildurl': None,
                     'branch': None,
+                    'testsurl': None,
                     'tree': self.tree,
                     'timestamp': datetime.datetime.now().strftime('%Y%m%d%H%M%S')
                   }
@@ -377,6 +380,10 @@ class PulseBuildMonitor(object):
         # look for build url
         elif property[0] == 'packageUrl' or property[0] == 'build_url':
           builddata['buildurl'] = property[1]
+
+        # look for tests url
+        elif property[0] == 'testsUrl':
+          builddata['testsurl'] = property[1]
 
         # look for hg branch
         elif property[0] == 'branch':
