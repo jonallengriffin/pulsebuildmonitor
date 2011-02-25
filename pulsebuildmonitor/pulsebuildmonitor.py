@@ -442,4 +442,5 @@ class PulseBuildMonitor(object):
       message.ack()
       if self.logger:
         self.logger.error(inst)
+      raise
 
