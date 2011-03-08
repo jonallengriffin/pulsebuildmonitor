@@ -260,8 +260,12 @@ class PulseBuildMonitor(object):
                          callback=self.pulseMessageReceived,
                          durable=self.durable)
 
-    self.unittestRe = re.compile(r'build\.(%s[-|_](.*?)(-debug|-o-debug)?[-|_](test|unittest)-(.*?))\.(\d+)\.' % self.tree)
-    self.buildRe = re.compile(r'build\.%s[-|_](.*?)\.' % self.tree)
+    if isinstance(self.tree, list):
+      trees = '|'.join(self.tree)
+    else:
+      trees = self.tree
+    self.unittestRe = re.compile(r'build\.((%s)[-|_](.*?)(-debug|-o-debug)?[-|_](test|unittest)-(.*?))\.(\d+)\.' % trees)
+    self.buildRe = re.compile(r'build\.(%s)[-|_](.*?)\.' % trees)
 
   def purgePulseQueue(self):
     """Purge any messages from the queue.  This has no effect if you're not
@@ -346,7 +350,13 @@ class PulseBuildMonitor(object):
       key = data['_meta']['routing_key']
 
       # see if this message is for our tree; if not, discard it
-      if not self.tree in key:
+      tree = None
+      if isinstance(self.tree, list):
+        tree = reduce(lambda x, y: x if (x and x in key) else y if (y and y in key) else None, self.tree)
+      else:
+        if self.tree in key:
+          tree = self.tree
+      if not tree:
         message.ack()
         return
 
@@ -359,7 +369,7 @@ class PulseBuildMonitor(object):
                     'buildurl': None,
                     'branch': None,
                     'testsurl': None,
-                    'tree': self.tree,
+                    'tree': tree,
                     'timestamp': datetime.datetime.now().strftime('%Y%m%d%H%M%S')
                   }
 
@@ -398,13 +408,13 @@ class PulseBuildMonitor(object):
       match = self.unittestRe.match(key)
       if match:
         # store some more metadata in the builddata dict
-        builddata['os'] = match.groups()[1]
-        if match.groups()[2]:
+        builddata['os'] = match.groups()[2]
+        if match.groups()[3]:
           builddata['buildtype'] = 'debug'
         else:
           builddata['buildtype'] = 'opt'
-        builddata['test'] = match.groups()[4]
-        builddata['buildnumber'] = match.groups()[5]
+        builddata['test'] = match.groups()[5]
+        builddata['buildnumber'] = match.groups()[6]
         builddata['logurl'] = None
         if builddata['buildurl']:
           builddata['logurl'] = '%s/%s-build%s.txt.gz' % \
@@ -442,5 +452,6 @@ class PulseBuildMonitor(object):
       message.ack()
       if self.logger:
         self.logger.error(inst)
-      raise
+      else:
+        raise
 

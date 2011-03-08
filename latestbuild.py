@@ -52,6 +52,13 @@ class LatestBuildMonitor(PulseBuildMonitor, Thread):
       self.builds[builddata['tree']][builddata['branch']][builddata['platform']] = {}
     self.builds[builddata['tree']][builddata['branch']][builddata['platform']].update({builddata['buildtype']:  builddata['buildurl']})
 
+  def onTestComplete(self, builddata):
+    #print "================================================================="
+    #print "Test Complete:"
+    #print json.dumps(builddata, indent=2)
+    #print "================================================================="
+    pass
+
   def onPulseMessage(self, data):
     key = data['_meta']['routing_key']
     #print key
@@ -113,6 +120,7 @@ if __name__ == '__main__':
   monitor = LatestBuildMonitor(dir=dir,
                                logger=logger,
                                port=options.port,
+                               tree=['mozilla-central', 'services-central'],
                                label='woo@mozilla.com|latest_build_monitor_' + socket.gethostname())
   monitor.start()
   monitor.listen()
