@@ -352,11 +352,14 @@ class PulseBuildMonitor(object):
       # see if this message is for our tree; if not, discard it
       tree = None
       if isinstance(self.tree, list):
-        tree = reduce(lambda x, y: x if (x and x in key) else y if (y and y in key) else None, self.tree)
+        for atree in self.tree:
+          if atree in key:
+            tree = atree
+            break
       else:
         if self.tree in key:
           tree = self.tree
-      if not tree:
+      if tree is None:
         message.ack()
         return
 
@@ -443,7 +446,7 @@ class PulseBuildMonitor(object):
           self.onBuildComplete(builddata)
 
         else:
-          raise Exception('unexpected message received: %s', key)
+          print 'unexpected message received: %s' % key
 
       # acknowledge the message, to remove it from the queue
       message.ack()
