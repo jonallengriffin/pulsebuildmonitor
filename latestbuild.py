@@ -61,7 +61,7 @@ class LatestBuildMonitor(PulseBuildMonitor, Thread):
 
   def onPulseMessage(self, data):
     key = data['_meta']['routing_key']
-    #print key
+    # print key
 
   def get_latest_build(self):
     return self.builds

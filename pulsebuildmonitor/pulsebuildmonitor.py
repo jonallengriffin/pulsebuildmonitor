@@ -229,7 +229,7 @@ class PulseBuildMonitor(object):
   def __init__(self, label=None, tree='mozilla-central',
                manifest='builds.manifest', notify_on_logs=False,
                durable=False, platforms=None, tests=None,
-               logger=None):
+               logger=None, mobile=None):
     self.label = label
     self.tree = tree
     self.platforms = platforms
@@ -238,6 +238,7 @@ class PulseBuildMonitor(object):
     self.notify_on_logs = notify_on_logs
     self.manifest = os.path.abspath(manifest)
     self.logger = logger
+    self.mobile = mobile
 
     self.lock = RLock()
 
@@ -376,6 +377,11 @@ class PulseBuildMonitor(object):
                     'timestamp': datetime.datetime.now().strftime('%Y%m%d%H%M%S')
                   }
 
+      if 'mobile' in key:
+        builddata['mobile'] = True
+      else:
+        builddata['mobile'] = False
+
       # scan the payload properties for items of interest
       for property in data['payload']['properties']:
 
@@ -403,7 +409,8 @@ class PulseBuildMonitor(object):
           builddata['branch'] = property[1]
 
       # see if this message is for one of our platforms
-      if self.platforms is not None and builddata['platform'] not in self.platforms:
+      if (self.platforms is not None and builddata['platform'] not in self.platforms) or \
+         (self.mobile is not None and self.mobile != builddata['mobile']):
         message.ack()
         return
 
