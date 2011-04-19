@@ -177,7 +177,8 @@ class TestLogThread(Thread):
 
     except Exception, inst:
       if self.logger:
-        self.logger.error(inst)
+        self.logger.exception(inst)
+        self.logger.error(url)
       return (-1, -1)
 
   def run(self):
@@ -218,7 +219,7 @@ class TestLogThread(Thread):
 
       except Exception, inst:
         if self.logger:
-          self.logger.error(inst)
+          self.logger.exception(inst)
 
       # wait 5 seconds and start over
       time.sleep(5)
@@ -461,7 +462,8 @@ class PulseBuildMonitor(object):
     except Exception, inst:
       message.ack()
       if self.logger:
-        self.logger.error(inst)
+        self.logger.exception(inst)
+        print inst
       else:
         raise
 
