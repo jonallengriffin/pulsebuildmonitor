@@ -175,6 +175,10 @@ class TestLogThread(Thread):
 
       return (code, content_length)
 
+    except AttributeError:
+      # this can happen when we didn't get a valid url from pulse
+      return (-1, -1)
+
     except Exception, inst:
       if self.logger:
         self.logger.exception(inst)
