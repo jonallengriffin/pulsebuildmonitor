@@ -41,7 +41,7 @@ from setuptools import setup, find_packages
 
 version = '0.1.10'
 
-deps = ['python-dateutil', 'MozillaPulse']
+deps = ['python-dateutil == 1.5', 'MozillaPulse']
 
 # we only support python 2 right now
 assert sys.version_info[0] == 2
