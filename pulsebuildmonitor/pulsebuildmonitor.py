@@ -382,7 +382,7 @@ class PulseBuildMonitor(object):
                     'timestamp': datetime.datetime.now().strftime('%Y%m%d%H%M%S')
                   }
 
-      if 'mobile' in key:
+      if 'mob' in key:
         builddata['mobile'] = True
       else:
         builddata['mobile'] = False
