@@ -40,6 +40,7 @@ import httplib
 import os
 import re
 import time
+import traceback
 try:
   import json
 except:
@@ -464,10 +465,10 @@ class PulseBuildMonitor(object):
       message.ack()
 
     except Exception, inst:
-      message.ack()
       if self.logger:
+        message.ack()
         self.logger.exception(inst)
-        print inst
+        traceback.print_exc()
       else:
         raise
 
