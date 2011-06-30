@@ -39,7 +39,7 @@
 import sys
 from setuptools import setup, find_packages
 
-version = '0.1.10'
+version = '0.2'
 
 deps = ['python-dateutil == 1.5', 'MozillaPulse']
 
