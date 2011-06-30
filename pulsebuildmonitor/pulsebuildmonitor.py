@@ -230,6 +230,15 @@ class TestLogThread(Thread):
       time.sleep(5)
 
 
+class BadPulseMessageError(Exception):
+
+  def __init__(self, pulseMessage, error):
+    self.pulseMessage = pulseMessage
+    self.error = error
+  def __str__(self):
+    return '%s -- %s' % (json.dumps(self.pulseMessage), self.error)
+
+
 class PulseBuildMonitor(object):
 
   def __init__(self, label=None, tree='mozilla-central',
@@ -388,31 +397,35 @@ class PulseBuildMonitor(object):
       else:
         builddata['mobile'] = False
 
-      # scan the payload properties for items of interest
-      for property in data['payload']['properties']:
+      try:
+        # scan the payload properties for items of interest
+        for property in data['payload']['properties']:
 
-        # look for buildid
-        if property[0] == 'buildid':
-          builddata['buildid'] = property[1]
-          date,builddata['builddate'] = self.buildid2date(property[1])
+          # look for buildid
+          if property[0] == 'buildid':
+            builddata['buildid'] = property[1]
+            date,builddata['builddate'] = self.buildid2date(property[1])
 
-        # look for platform
-        elif property[0] == 'platform':
-          builddata['platform'] = property[1]
-          if '-debug' in builddata['platform']:
-            builddata['platform'] = builddata['platform'][0:builddata['platform'].find('-debug')]
+          # look for platform
+          elif property[0] == 'platform':
+            builddata['platform'] = property[1]
+            if '-debug' in builddata['platform']:
+              builddata['platform'] = builddata['platform'][0:builddata['platform'].find('-debug')]
 
-        # look for build url
-        elif property[0] == 'packageUrl' or property[0] == 'build_url':
-          builddata['buildurl'] = property[1]
+          # look for build url
+          elif property[0] == 'packageUrl' or property[0] == 'build_url':
+            builddata['buildurl'] = property[1]
 
-        # look for tests url
-        elif property[0] == 'testsUrl':
-          builddata['testsurl'] = property[1]
+          # look for tests url
+          elif property[0] == 'testsUrl':
+            builddata['testsurl'] = property[1]
 
-        # look for hg branch
-        elif property[0] == 'branch':
-          builddata['branch'] = property[1]
+          # look for hg branch
+          elif property[0] == 'branch':
+            builddata['branch'] = property[1]
+
+      except Exception, inst:
+        raise BadPulseMessageError(data, traceback.format_exc(2))
 
       # see if this message is for one of our platforms
       if (self.platforms is not None and builddata['platform'] not in self.platforms) or \
@@ -463,6 +476,12 @@ class PulseBuildMonitor(object):
 
       # acknowledge the message, to remove it from the queue
       message.ack()
+
+    except BadPulseMessageError, inst:
+      message.ack()
+      if self.logger:
+        self.logger.exception(inst)
+      traceback.print_exc()
 
     except Exception, inst:
       if self.logger:
