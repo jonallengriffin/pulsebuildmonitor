@@ -36,4 +36,7 @@
 # ***** END LICENSE BLOCK *****
 
 from pulsebuildmonitor import *
+from factory import *
+from daemon import *
+
 

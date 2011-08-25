@@ -258,6 +258,10 @@ class PulseBuildMonitor(object):
     self.lock = RLock()
 
     if self.notify_on_logs:
+      # delete any old manifest file
+      if os.access(self.manifest, os.F_OK):
+        os.remove(self.manifest)
+
       # track what files are pending in a manifest
       self.buildmanifest = BuildManifest(self.manifest, self.lock)
 

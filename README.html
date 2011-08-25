@@ -8,10 +8,8 @@ with the following structure:
 <pre>
 {
   tree: {
-    branch: {
-      platform: {
-        buildtype: buildurl
-      }
+    platform: {
+      buildtype: buildurl
     }
   }
 }
@@ -19,7 +17,6 @@ with the following structure:
 
 <ul>
   <li>tree: currently only mozilla-central is returned
-  <li>branch: either mozilla-central or mozilla-central-mobile-browser
   <li>platform: e.g., win32, linux, linux64, etc
   <li>buildtype: either opt or debug
 </ul>
@@ -28,7 +25,7 @@ So, if you knew you wanted the url of the latest win32 opt build on
 mozilla-central, you could retrieve the JSON and do something like:
 
 <pre>
-  url = data['mozilla-central']['mozilla-central']['win32']['opt']
+  url = data['mozilla-central']['win32']['opt']
 </pre>
 
 <a href=".">Get the latest builds JSON.</a>
