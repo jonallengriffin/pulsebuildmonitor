@@ -34,8 +34,7 @@ class LatestBuildMonitor(object):
         self.builds[builddata['tree']][builddata['platform']].update({builddata['buildtype']:  builddata['buildurl']})
 
     def pulseCallback(self, data):
-        #print data['_meta']['routing_key']
-        pass
+        key = data['_meta']['routing_key']
 
     def start(self):
         monitor = start_pulse_monitor(buildCallback=self.buildCallback,

@@ -147,12 +147,15 @@ class BuildManifest(object):
 
 class TestLogThread(Thread):
 
-  def __init__(self, manifest, lock, log_avail_callback, logger=None):
+  def __init__(self, manifest, lock, log_avail_callback,
+               buildlog_avail_callback=None,
+               logger=None):
     super(TestLogThread, self).__init__()
     self.builddata = None
     self.buildmanifest = BuildManifest(manifest, lock)
     self.lock = lock
     self.log_avail_callback = log_avail_callback
+    self.buildlog_avail_callback = buildlog_avail_callback
     self.logger = logger
 
   def getUrlInfo(self, url):
@@ -196,7 +199,12 @@ class TestLogThread(Thread):
         for builddata in buildlist:
 
           new_content_length = -1
-          code, content_length = self.getUrlInfo(builddata['logurl'])
+          urlfield = 'logurl' if 'logurl' in builddata else 'buildlogurl'
+          if urlfield in builddata:
+            code, content_length = self.getUrlInfo(builddata[urlfield])
+          else:
+            self.buildmanifest.removeBuild(builddata)
+            continue
 
           if code == 200:
             # wait at most 30s until the log is available and its size is
@@ -205,12 +213,15 @@ class TestLogThread(Thread):
             while new_content_length != content_length:
               new_content_length = content_length
               time.sleep(2)
-              code, content_length = self.getUrlInfo(builddata['logurl'])
+              code, content_length = self.getUrlInfo(builddata[urlfield])
               if datetime.datetime.now() - starttime > datetime.timedelta(seconds=30):
                 # XXX: log an error
                 break
 
-              self.log_avail_callback(builddata)
+              if urlfield == 'logurl':
+                self.log_avail_callback(builddata)
+              elif urlfield == 'buildlogurl' and self.buildlog_avail_callback is not None:
+                self.buildlog_avail_callback(builddata)
 
               # remove the completed log from the manifest
               self.buildmanifest.removeBuild(builddata)
@@ -269,6 +280,7 @@ class PulseBuildMonitor(object):
       self.logthread = TestLogThread(self.manifest,
                                      self.lock,
                                      self.onTestLogAvailable,
+                                     buildlog_avail_callback=self.onBuildLogAvailable,
                                      logger=self.logger)
       self.logthread.start()
 
@@ -285,7 +297,7 @@ class PulseBuildMonitor(object):
     else:
       trees = self.tree
     self.unittestRe = re.compile(r'build\.((%s)[-|_](.*?)(-debug|-o-debug)?[-|_](test|unittest)-(.*?))\.(\d+)\.' % trees)
-    self.buildRe = re.compile(r'build\.(%s)[-|_](.*?)\.' % trees)
+    self.buildRe = re.compile(r'build\.(%s)[-|_](.*?)\.(\d+)\.' % trees)
 
   def purgePulseQueue(self):
     """Purge any messages from the queue.  This has no effect if you're not
@@ -322,6 +334,13 @@ class PulseBuildMonitor(object):
         buildtype: one of: debug, opt
         testsurl:  full url to the test bundle
         key:       the pulse routing_key that was sent with this message
+    """
+    pass
+
+  def onBuildLogAvailable(self, builddata):
+    """Called whenever a buildlog is available; same parameters as above,
+       plus:
+         buildlogurl: full url to the build log
     """
     pass
 
@@ -473,7 +492,18 @@ class PulseBuildMonitor(object):
             builddata['buildtype'] = 'debug'
           else:
             builddata['buildtype'] = 'opt'
+          builddata['buildnumber'] = match.group(3)
+          builddata['builder'] = match.group(2)
+          builddata['buildlogurl'] = None
+          if builddata['buildurl']:
+            builddata['buildlogurl'] = '%s/%s-%s-build%s.txt.gz' % \
+                (os.path.dirname(builddata['buildurl']),
+                 builddata['tree'],
+                 match.group(2), builddata['buildnumber'])
           self.onBuildComplete(builddata)
+
+          if self.notify_on_logs:
+            self.buildmanifest.addBuild(builddata)
 
         else:
           print 'unexpected message received: %s' % key
