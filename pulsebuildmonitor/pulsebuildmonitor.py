@@ -60,14 +60,23 @@ class BuildManifest(object):
     """A tuple representing a build in the build manifest.
     """
 
-    return (builddata['tree'],
-            builddata['os'],
-            builddata['platform'],
-            builddata['buildtype'],
-            builddata['builddate'],
-            builddata['test'],
-            builddata['logurl'],
-            builddata['timestamp'])
+    if 'logurl' in builddata:
+      return (builddata['tree'],
+              builddata['os'],
+              builddata['platform'],
+              builddata['buildtype'],
+              builddata['builddate'],
+              builddata['test'],
+              builddata['logurl'],
+              builddata['timestamp'])
+
+    else:
+      return (builddata['tree'],
+              builddata['platform'],
+              builddata['buildlogurl'],
+              builddata['buildtype'],
+              builddata['builddate'],
+              builddata['timestamp'])
 
   def _write_manifest(self, builds):
     """Write the given build set to the manifest file.
@@ -113,16 +122,26 @@ class BuildManifest(object):
     buildlist = []
 
     for build in builds:
-      buildlist.append({
-                         'tree': build[0],
-                         'os': build[1],
-                         'platform': build[2],
-                         'buildtype': build[3],
-                         'builddate': build[4],
-                         'test': build[5],
-                         'logurl': build[6],
-                         'timestamp': build[7],
-                       })
+      if len(build) == 8:
+        buildlist.append({
+                           'tree': build[0],
+                           'os': build[1],
+                           'platform': build[2],
+                           'buildtype': build[3],
+                           'builddate': build[4],
+                           'test': build[5],
+                           'logurl': build[6],
+                           'timestamp': build[7],
+                         })
+      else:
+        buildlist.append({
+                          'tree': build[0],
+                          'platform': build[1],
+                          'buildlogurl': build[2],
+                          'buildtype': build[3],
+                          'builddate': build[4],
+                          'timestamp': build[5],
+                        })
 
     return buildlist
 
