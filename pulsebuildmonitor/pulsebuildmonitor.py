@@ -77,7 +77,10 @@ class BuildManifest(object):
               builddata['buildtype'],
               builddata['builddate'],
               builddata['timestamp'],
-              builddata['builder'])
+              builddata['builder'],
+              builddata['buildnumber'],
+              builddata['mobile'],
+              )
 
   def _write_manifest(self, builds):
     """Write the given build set to the manifest file.
@@ -143,6 +146,8 @@ class BuildManifest(object):
                           'builddate': build[4],
                           'timestamp': build[5],
                           'builder': build[6],
+                          'buildnumber': build[7],
+                          'mobile': build[8],
                         })
 
     return buildlist
