@@ -68,7 +68,8 @@ class BuildManifest(object):
               builddata['builddate'],
               builddata['test'],
               builddata['logurl'],
-              builddata['timestamp'])
+              builddata['timestamp'],
+              builddata['buildername'])
 
     else:
       return (builddata['tree'],
@@ -80,6 +81,7 @@ class BuildManifest(object):
               builddata['builder'],
               builddata['buildnumber'],
               builddata['mobile'],
+              builddata['buildername'],
               )
 
   def _write_manifest(self, builds):
@@ -126,7 +128,7 @@ class BuildManifest(object):
     buildlist = []
 
     for build in builds:
-      if len(build) == 8:
+      if len(build) == 9:
         buildlist.append({
                            'tree': build[0],
                            'os': build[1],
@@ -136,6 +138,7 @@ class BuildManifest(object):
                            'test': build[5],
                            'logurl': build[6],
                            'timestamp': build[7],
+                           'buildername': build[8],
                          })
       else:
         buildlist.append({
@@ -148,6 +151,7 @@ class BuildManifest(object):
                           'builder': build[6],
                           'buildnumber': build[7],
                           'mobile': build[8],
+                          'buildername': build[9],
                         })
 
     return buildlist
@@ -437,6 +441,7 @@ class PulseBuildMonitor(object):
                     'buildurl': None,
                     'branch': None,
                     'testsurl': None,
+                    'buildername': None,
                     'tree': tree,
                     'timestamp': datetime.datetime.now().strftime('%Y%m%d%H%M%S')
                   }
@@ -472,6 +477,10 @@ class PulseBuildMonitor(object):
           # look for hg branch
           elif property[0] == 'branch':
             builddata['branch'] = property[1]
+
+          # look for buildername
+          elif property[0] == 'buildername':
+            builddata['buildername'] = property[1]
 
       except Exception, inst:
         raise BadPulseMessageError(data, traceback.format_exc(2))
