@@ -69,7 +69,9 @@ class BuildManifest(object):
               builddata['test'],
               builddata['logurl'],
               builddata['timestamp'],
-              builddata['buildername'])
+              builddata['buildername'],
+              builddata['mobile'],
+              builddata['talos'])
 
     else:
       return (builddata['tree'],
@@ -128,7 +130,7 @@ class BuildManifest(object):
     buildlist = []
 
     for build in builds:
-      if len(build) == 9:
+      if len(build) == 11:
         buildlist.append({
                            'tree': build[0],
                            'os': build[1],
@@ -139,6 +141,8 @@ class BuildManifest(object):
                            'logurl': build[6],
                            'timestamp': build[7],
                            'buildername': build[8],
+                           'mobile': build[9],
+                           'talos': build[10],
                          })
       else:
         buildlist.append({
@@ -281,11 +285,13 @@ class BadPulseMessageError(Exception):
 
 
 class PulseBuildMonitor(object):
+  unittestFragment = 'maybe_rebooting.finished'
+  talosFragment = 'reboot.finished'
 
   def __init__(self, label=None, tree='mozilla-central',
                manifest='builds.manifest', notify_on_logs=False,
                durable=False, platforms=None, tests=None,
-               logger=None, mobile=None):
+               logger=None, mobile=None, includeTalos=False):
     self.label = label
     self.tree = tree
     self.platforms = platforms
@@ -295,6 +301,9 @@ class PulseBuildMonitor(object):
     self.manifest = os.path.abspath(manifest)
     self.logger = logger
     self.mobile = mobile
+    self.fragments = [self.unittestFragment]
+    if includeTalos:
+      self.fragments.append(self.talosFragment)
 
     self.lock = RLock()
 
@@ -318,7 +327,7 @@ class PulseBuildMonitor(object):
     if not self.label:
       raise Exception('label not defined')
     self.pulse = consumers.BuildConsumer(applabel=self.label)
-    self.pulse.configure(topic='build.#.step.#.maybe_rebooting.finished',
+    self.pulse.configure(topic='build.#.step.#.finished',
                          callback=self.pulseMessageReceived,
                          durable=self.durable)
 
@@ -411,12 +420,16 @@ class PulseBuildMonitor(object):
     """Called whenever our pulse consumer receives a message.
     """
 
+    # we determine if this message is of interest to us by examining
+    # the routing_key
+    key = data['_meta']['routing_key']
+
+    if not [x for x in self.fragments if x in key]:
+      message.ack()
+      return
+
     try:
       self.onPulseMessage(data)
-
-      # we determine if this message is of interest to us by examining
-      # the routing_key
-      key = data['_meta']['routing_key']
 
       # see if this message is for our tree; if not, discard it
       tree = None
@@ -467,7 +480,7 @@ class PulseBuildMonitor(object):
               builddata['platform'] = builddata['platform'][0:builddata['platform'].find('-debug')]
 
           # look for build url
-          elif property[0] == 'packageUrl' or property[0] == 'build_url':
+          elif property[0] in ['packageUrl', 'build_url', 'fileURL']:
             builddata['buildurl'] = property[1]
 
           # look for tests url
@@ -494,6 +507,7 @@ class PulseBuildMonitor(object):
       # see if this message is for a unittest
       match = self.unittestRe.match(key)
       if match:
+        builddata['talos'] = self.talosFragment in key
         # store some more metadata in the builddata dict
         builddata['os'] = match.groups()[2]
         if match.groups()[3]:

@@ -48,7 +48,7 @@ class FactoryBuildMonitor(PulseBuildMonitor):
     def __init__(self, buildCallback=None, testCallback=None,
                  pulseCallback=None,
                  platform=None, tree=None, label=None, mobile=False,
-                 logger=None, buildtype=None):
+                 logger=None, buildtype=None, includeTalos=False):
         self.platform = platform
         self.tree = tree if tree else ['mozilla-central']
         self.mobile = mobile
@@ -58,6 +58,7 @@ class FactoryBuildMonitor(PulseBuildMonitor):
         self.testCallback = testCallback
         self.pulseCallback = pulseCallback
         self.monitorThread = None
+        self.includeTalos = includeTalos
 
         if not self.label:
             # generate a random label
@@ -80,7 +81,8 @@ class FactoryBuildMonitor(PulseBuildMonitor):
                                    notify_on_logs=self.testCallback is not None,
                                    label=self.label,
                                    mobile=self.mobile,
-                                   logger=self.logger)
+                                   logger=self.logger,
+                                   includeTalos = self.includeTalos)
 
     def join(self):
         assert(self.monitorThread)

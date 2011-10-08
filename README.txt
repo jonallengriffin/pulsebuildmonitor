@@ -37,7 +37,8 @@ To use the monitor, you just call a single convenience function:
                                 platform=None,
                                 mobile=False,
                                 buildtype=None,
-                                logger=None)
+                                logger=None,
+                                includeTalos=False)
 
 This function returns right away; all of the activity it initiated is
 executed on separate threads.
@@ -74,6 +75,8 @@ Parameters
       * timestamp:   the datetime the pulse message was received, in 
                      'YYYYMMDDHHMMSS' format
       * logurl:      full url to the logfile on http://stage.mozilla.org
+      * mobile:      true if the message relates to a mobile test
+      * talos:       true if the message related to a talos test
 
   pulseCallback - a function to call when any buildbot message is received.
     The messages sent to this callback are not filtered by the platform,
@@ -96,6 +99,10 @@ Parameters
   mobile - if True, only pass messages relting to mobile builds to
     buildCallback and testCallback.  If False, exclude all mobile
     messages.
+
+  includeTalos - if True, pass messages relating to both talos and
+    unittests to testCallback.  If False (the default), exclude all
+    talos messages.
 
   buildtype - either 'opt' or 'debug'.  If specified, used to filter
     messages passed to buildCallback and testCallback.
