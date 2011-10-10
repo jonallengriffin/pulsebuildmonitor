@@ -114,11 +114,13 @@ class FactoryBuildMonitor(PulseBuildMonitor):
 
     def onTestLogAvailable(self, builddata):
         print 'onTestLogAvailable'
-        if (self.testCallback and 
+
+        if (self.testCallback and
                 (not self.platform or
                     ('platform' in builddata and builddata['platform'] in self.platform)) and
                 (not self.buildtype or
-                    ('buildtype' in builddata and builddata['buildtype'] == self.buildtype))):
+                    ('buildtype' in builddata and builddata['buildtype'] in self.buildtype))):
+            print 'calling callback'
             callbackThread = threading.Thread(target=self.start_callback_thread, args=(self.testCallback, builddata))
             callbackThread.daemon = True
             callbackThread.start()
