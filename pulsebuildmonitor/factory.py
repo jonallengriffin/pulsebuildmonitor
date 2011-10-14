@@ -113,7 +113,6 @@ class FactoryBuildMonitor(PulseBuildMonitor):
             callbackThread.start()
 
     def onTestLogAvailable(self, builddata):
-        print 'onTestLogAvailable'
 
         if (self.testCallback and
                 (not self.platform or

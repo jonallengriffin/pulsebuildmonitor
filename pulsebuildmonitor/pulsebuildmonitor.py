@@ -464,6 +464,7 @@ class PulseBuildMonitor(object):
       else:
         builddata['mobile'] = False
 
+      stage_platform = None
       try:
         # scan the payload properties for items of interest
         for property in data['payload']['properties']:
@@ -495,6 +496,13 @@ class PulseBuildMonitor(object):
           elif property[0] == 'buildername':
             builddata['buildername'] = property[1]
 
+          # look for stage_platform
+          elif property[0] == 'stage_platform':
+            stage_platform = property[1]
+            if '-pgo' in stage_platform:
+              # we don't want any '-pgo' suffix here
+              stage_platform = stage_platform[0:stage_platform.find('-pgo')]
+
       except Exception, inst:
         raise BadPulseMessageError(data, traceback.format_exc(2))
 
@@ -508,6 +516,8 @@ class PulseBuildMonitor(object):
       match = self.unittestRe.match(key)
       if match:
         builddata['talos'] = self.talosFragment in key
+        if builddata['talos'] and stage_platform:
+          builddata['platform'] = stage_platform
         # store some more metadata in the builddata dict
         builddata['os'] = match.groups()[2]
         if match.groups()[3]:
