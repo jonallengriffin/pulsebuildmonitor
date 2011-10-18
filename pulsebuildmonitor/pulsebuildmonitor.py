@@ -506,9 +506,14 @@ class PulseBuildMonitor(object):
       except Exception, inst:
         raise BadPulseMessageError(data, traceback.format_exc(2))
 
+      # see if this message is from mobile
+      if (self.mobile is not None and self.mobile != builddata['mobile']):
+        message.ack()
+        return
+
       # see if this message is for one of our platforms
-      if (self.platforms is not None and builddata['platform'] not in self.platforms) or \
-         (self.mobile is not None and self.mobile != builddata['mobile']):
+      if (self.platforms is not None and builddata['platform'] not in self.platforms and \
+                                         stage_platform not in self.platforms):
         message.ack()
         return
 
