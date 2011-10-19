@@ -335,7 +335,7 @@ class PulseBuildMonitor(object):
       trees = '|'.join(self.tree)
     else:
       trees = self.tree
-    self.unittestRe = re.compile(r'build\.((%s)[-|_](.*?)(-debug|-o-debug)?[-|_](test|unittest)-(.*?))\.(\d+)\.' % trees)
+    self.unittestRe = re.compile(r'build\.((%s)[-|_](.*?)(-debug|-o-debug|-pgo)?[-|_](test|unittest)-(.*?))\.(\d+)\.' % trees)
     self.buildRe = re.compile(r'build\.(%s)[-|_](.*?)\.(\d+)\.' % trees)
 
   def purgePulseQueue(self):
@@ -370,7 +370,7 @@ class PulseBuildMonitor(object):
                    'YYYYMMDDHHMMSS' format
         platform:  generic platform, e.g., linux, linux64, win32, macosx64
         buildurl:  full url to the build on http://stage.mozilla.org
-        buildtype: one of: debug, opt
+        buildtype: one of: debug, opt, pgo
         testsurl:  full url to the test bundle
         key:       the pulse routing_key that was sent with this message
     """
@@ -394,7 +394,7 @@ class PulseBuildMonitor(object):
         branch:      the hg branch the build was made from
         os:          specific OS, e.g., win7, xp, fedora64, snowleopard
         platform:    generic platform, e.g., linux, linux64, win32, macosx64
-        buildtype:   one of: debug, opt
+        buildtype:   one of: debug, opt, pgo
         builddate:   the buildbot builddate in seconds since epoch format
         test:        the name of the test, e.g., reftest, mochitest-other
         timestamp:   the datetime the pulse message was received, in 
@@ -525,8 +525,12 @@ class PulseBuildMonitor(object):
           builddata['platform'] = stage_platform
         # store some more metadata in the builddata dict
         builddata['os'] = match.groups()[2]
-        if match.groups()[3]:
-          builddata['buildtype'] = 'debug'
+        debug_or_pgo = match.groups()[3]
+        if debug_or_pgo:
+          if 'debug' in debug_or_pgo:
+            builddata['buildtype'] = 'debug'
+          elif 'pgo' in debug_or_pgo:
+            builddata['buildtype'] = 'pgo'
         else:
           builddata['buildtype'] = 'opt'
         builddata['test'] = match.groups()[5]
@@ -554,6 +558,8 @@ class PulseBuildMonitor(object):
           # call the onBuildComplete handler
           if 'debug' in key:
             builddata['buildtype'] = 'debug'
+          elif 'pgo' in key:
+            builddata['buildtype'] = 'pgo'
           else:
             builddata['buildtype'] = 'opt'
           builddata['buildnumber'] = match.group(3)
