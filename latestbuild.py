@@ -33,13 +33,21 @@ class LatestBuildMonitor(object):
         #print '========================================================='
         self.builds[builddata['tree']][builddata['platform']].update({builddata['buildtype']:  builddata['buildurl']})
 
+    def testCallback(self, builddata):
+        if 'win' in builddata['platform']:
+            print '========================================================='
+            print 'testCallback'
+            print json.dumps(builddata, indent=2)
+            print '========================================================='
+
     def pulseCallback(self, data):
         key = data['_meta']['routing_key']
-        #print key
+        if 'win' in key:
+            print key
 
     def start(self):
         monitor = start_pulse_monitor(buildCallback=self.buildCallback,
-                                      testCallback=None,
+                                      testCallback=self.testCallback,
                                       pulseCallback=self.pulseCallback,
                                       tree=['mozilla-inbound', 'mozilla-central'])
 

@@ -483,6 +483,10 @@ class PulseBuildMonitor(object):
           # look for build url
           elif property[0] in ['packageUrl', 'build_url', 'fileURL']:
             builddata['buildurl'] = property[1]
+            # ignore xulrunner builds
+            if 'xulrunner' in builddata['buildurl']:
+              message.ack()
+              return
 
           # look for tests url
           elif property[0] == 'testsUrl':
