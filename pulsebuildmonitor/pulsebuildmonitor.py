@@ -287,6 +287,17 @@ class BadPulseMessageError(Exception):
 class PulseBuildMonitor(object):
   unittestFragment = 'maybe_rebooting.finished'
   talosFragment = 'reboot.finished'
+  androidFragment = 'reboot_device.finished'
+  talosTests = [
+    '-tpan',
+    '-tdhtml_nochrome',
+    '-tsspider_nochrome',
+    '-tsvg_nochrome',
+    '-tp4m',
+    '-ts',
+    '-twinopen',
+    '-tzoom'
+  ]
 
   def __init__(self, label=None, tree='mozilla-central',
                manifest='builds.manifest', notify_on_logs=False,
@@ -301,7 +312,7 @@ class PulseBuildMonitor(object):
     self.manifest = os.path.abspath(manifest)
     self.logger = logger
     self.mobile = mobile
-    self.fragments = [self.unittestFragment]
+    self.fragments = [self.unittestFragment, self.androidFragment]
     if includeTalos:
       self.fragments.append(self.talosFragment)
 
@@ -524,11 +535,12 @@ class PulseBuildMonitor(object):
       # see if this message is for a unittest
       match = self.unittestRe.match(key)
       if match:
-        builddata['talos'] = self.talosFragment in key
-        if builddata['talos'] and stage_platform:
+        builddata['os'] = match.groups()[2]
+        builddata['talos'] = self.talosFragment in key or \
+                             bool(len(filter(lambda x: x in key, self.talosTests)))
+        if stage_platform and (builddata['talos'] or 'android' in builddata['os']):
           builddata['platform'] = stage_platform
         # store some more metadata in the builddata dict
-        builddata['os'] = match.groups()[2]
         debug_or_pgo = match.groups()[3]
         if debug_or_pgo:
           if 'debug' in debug_or_pgo:
