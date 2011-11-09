@@ -52,9 +52,10 @@ from urlparse import urlparse
 
 class BuildManifest(object):
 
-  def __init__(self, manifest, lock):
+  def __init__(self, manifest, lock, logger):
     self.manifest = manifest
     self.lock = lock
+    self.logger = logger
 
   def buildTuple(self, builddata):
     """A tuple representing a build in the build manifest.
@@ -165,6 +166,8 @@ class BuildManifest(object):
     """
 
     builds = self._read_manifest()
+    if self.logger:
+        self.logger.info('adding %s' % repr(self.buildTuple(builddata)))
     builds.add(self.buildTuple(builddata))
     self._write_manifest(builds)
 
@@ -172,6 +175,8 @@ class BuildManifest(object):
     """Remove the build form the build manifest, if it's present.
     """
 
+    if self.logger:
+        self.logger.info('removing %s' % repr(self.buildTuple(builddata)))
     builds = self._read_manifest()
     build = self.buildTuple(builddata)
     if build in builds:
@@ -183,10 +188,10 @@ class TestLogThread(Thread):
 
   def __init__(self, manifest, lock, log_avail_callback,
                buildlog_avail_callback=None,
-               logger=None):
+               logger=None, buildmanifest=None):
     super(TestLogThread, self).__init__()
     self.builddata = None
-    self.buildmanifest = BuildManifest(manifest, lock)
+    self.buildmanifest = buildmanifest
     self.lock = lock
     self.log_avail_callback = log_avail_callback
     self.buildlog_avail_callback = buildlog_avail_callback
@@ -324,14 +329,15 @@ class PulseBuildMonitor(object):
         os.remove(self.manifest)
 
       # track what files are pending in a manifest
-      self.buildmanifest = BuildManifest(self.manifest, self.lock)
+      self.buildmanifest = BuildManifest(self.manifest, self.lock, self.logger)
 
       # create a new thread to handle watching for logs
       self.logthread = TestLogThread(self.manifest,
                                      self.lock,
                                      self.onTestLogAvailable,
                                      buildlog_avail_callback=self.onBuildLogAvailable,
-                                     logger=self.logger)
+                                     logger=self.logger,
+                                     buildmanifest=self.buildmanifest)
       self.logthread.start()
 
     # setup the pulse consumer
