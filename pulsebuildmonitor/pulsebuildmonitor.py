@@ -96,7 +96,7 @@ class BuildManifest(object):
 
     try:
       f = open(self.manifest, 'w')
-      f.write(cPickle.dumps(list(builds), indent=2))
+      f.write(cPickle.dumps(list(builds)))
       f.close()
     except Exception, inst:
       if self.logger:
