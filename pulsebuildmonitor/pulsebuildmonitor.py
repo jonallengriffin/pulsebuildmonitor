@@ -35,6 +35,7 @@
 #
 # ***** END LICENSE BLOCK *****
 
+import cPickle
 import datetime
 import httplib
 import os
@@ -95,7 +96,7 @@ class BuildManifest(object):
 
     try:
       f = open(self.manifest, 'w')
-      f.write(json.dumps(list(builds), indent=2))
+      f.write(cPickle.dumps(list(builds), indent=2))
       f.close()
     except Exception, inst:
       # XXX: should log error
@@ -114,7 +115,7 @@ class BuildManifest(object):
     try:
       if os.access(self.manifest, os.F_OK):
         f = open(self.manifest, 'r')
-        buildlist = json.loads(f.read())
+        buildlist = cPickle.loads(f.read())
         for build in buildlist:
           builds.add(tuple(build))
         f.close()
