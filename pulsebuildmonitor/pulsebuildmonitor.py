@@ -99,8 +99,8 @@ class BuildManifest(object):
       f.write(cPickle.dumps(list(builds), indent=2))
       f.close()
     except Exception, inst:
-      # XXX: should log error
-      pass
+      if self.logger:
+        self.logger.exception(inst)
 
     self.lock.release()
 
@@ -120,8 +120,8 @@ class BuildManifest(object):
           builds.add(tuple(build))
         f.close()
     except Exception, inst:
-      # XXX: should log error
-      pass
+      if self.logger:
+        self.logger.exception(inst)
 
     self.lock.release()
     return builds
