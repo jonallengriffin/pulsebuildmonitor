@@ -353,7 +353,7 @@ class PulseBuildMonitor(object):
       trees = '|'.join(self.tree)
     else:
       trees = self.tree
-    self.unittestRe = re.compile(r'build\.((%s)[-|_](.*?)(-debug|-o-debug|-pgo)?[-|_](test|unittest)-(.*?))\.(\d+)\.' % trees)
+    self.unittestRe = re.compile(r'build\.((%s)[-|_](.*?)(-debug|-o-debug|-pgo|_pgo|_test)?[-|_](test|unittest|pgo)-(.*?))\.(\d+)\.' % trees)
     self.buildRe = re.compile(r'build\.(%s)[-|_](.*?)\.(\d+)\.' % trees)
 
   def purgePulseQueue(self):
@@ -556,6 +556,10 @@ class PulseBuildMonitor(object):
             builddata['buildtype'] = 'pgo'
         else:
           builddata['buildtype'] = 'opt'
+        # normally this could be 'test' or 'unittest', but sometimes it's 'pgo'! :(
+        extra = match.groups()[4]
+        if 'pgo' in extra:
+            builddata['buildtype'] = 'pgo'
         builddata['test'] = match.groups()[5]
         builddata['buildnumber'] = match.groups()[6]
         builddata['logurl'] = None
