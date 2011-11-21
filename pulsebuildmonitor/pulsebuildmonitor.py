@@ -238,7 +238,6 @@ class TestLogThread(Thread):
         buildlist = self.buildmanifest.builds
         for builddata in buildlist:
 
-          new_content_length = -1
           urlfield = 'logurl' if 'logurl' in builddata else 'buildlogurl'
           if urlfield in builddata:
             code, content_length = self.getUrlInfo(builddata[urlfield])
@@ -247,24 +246,13 @@ class TestLogThread(Thread):
             continue
 
           if code == 200:
-            # wait at most 30s until the log is available and its size is
-            # stable (i.e., we didn't catch it in the middle of an upload)
-            starttime = datetime.datetime.now()
-            while new_content_length != content_length:
-              new_content_length = content_length
-              time.sleep(2)
-              code, content_length = self.getUrlInfo(builddata[urlfield])
-              if datetime.datetime.now() - starttime > datetime.timedelta(seconds=30):
-                # XXX: log an error
-                break
+            if urlfield == 'logurl':
+              self.log_avail_callback(builddata)
+            elif urlfield == 'buildlogurl' and self.buildlog_avail_callback is not None:
+              self.buildlog_avail_callback(builddata)
 
-              if urlfield == 'logurl':
-                self.log_avail_callback(builddata)
-              elif urlfield == 'buildlogurl' and self.buildlog_avail_callback is not None:
-                self.buildlog_avail_callback(builddata)
-
-              # remove the completed log from the manifest
-              self.buildmanifest.removeBuild(builddata)
+            # remove the completed log from the manifest
+            self.buildmanifest.removeBuild(builddata)
 
           else:
             # some HTTP error code; ignore unless we've hit the max time
@@ -276,9 +264,6 @@ class TestLogThread(Thread):
       except Exception, inst:
         if self.logger:
           self.logger.exception(inst)
-
-      # wait 5 seconds and start over
-      time.sleep(5)
 
 
 class BadPulseMessageError(Exception):
