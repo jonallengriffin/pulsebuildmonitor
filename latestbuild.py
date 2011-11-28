@@ -49,7 +49,7 @@ class LatestBuildMonitor(object):
         monitor = start_pulse_monitor(buildCallback=self.buildCallback,
                                       testCallback=self.testCallback,
                                       pulseCallback=self.pulseCallback,
-                                      tree=['mozilla-inbound', 'mozilla-central'])
+                                      tree=['mozilla-inbound', 'birch', 'mozilla-central'])
 
         from wsgiref.simple_server import make_server, WSGIRequestHandler
 
@@ -105,3 +105,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
