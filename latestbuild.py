@@ -34,7 +34,7 @@ class LatestBuildMonitor(object):
         self.builds[builddata['tree']][builddata['platform']].update({builddata['buildtype']:  builddata['buildurl']})
 
     def testCallback(self, builddata):
-        if 'win' in builddata['platform']:
+        if False:
             print '========================================================='
             print 'testCallback'
             print json.dumps(builddata, indent=2)
@@ -102,6 +102,7 @@ def main():
 
     monitor = LatestBuildMonitor(logger=logger)
     monitor.start()
+
 
 if __name__ == '__main__':
     main()

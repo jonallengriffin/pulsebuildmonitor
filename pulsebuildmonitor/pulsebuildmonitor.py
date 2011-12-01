@@ -48,15 +48,15 @@ except:
   import simplejson as json
 from dateutil.parser import parse
 from mozillapulse import consumers
+from Queue import Queue
 from threading import Thread, RLock
 from urlparse import urlparse
 
 class BuildManifest(object):
 
-  def __init__(self, manifest, lock, logger):
-    self.manifest = manifest
-    self.lock = lock
+  def __init__(self, logger, queue):
     self.logger = logger
+    self.queue = queue
 
   def buildTuple(self, builddata):
     """A tuple representing a build in the build manifest.
@@ -88,108 +88,20 @@ class BuildManifest(object):
               builddata['buildername'],
               )
 
-  def _write_manifest(self, builds):
-    """Write the given build set to the manifest file.
-    """
-
-    self.lock.acquire()
-
-    try:
-      f = open(self.manifest, 'w')
-      f.write(cPickle.dumps(list(builds)))
-      f.close()
-    except Exception, inst:
-      if self.logger:
-        self.logger.exception(inst)
-
-    self.lock.release()
-
-  def _read_manifest(self):
-    """Read the build manifest, and return a set of builds contained
-       therein.
-    """
-
-    self.lock.acquire()
-    builds = set()
-
-    try:
-      if os.access(self.manifest, os.F_OK):
-        f = open(self.manifest, 'r')
-        buildlist = cPickle.loads(f.read())
-        for build in buildlist:
-          builds.add(tuple(build))
-        f.close()
-    except Exception, inst:
-      if self.logger:
-        self.logger.exception(inst)
-
-    self.lock.release()
-    return builds
-
-  @property
-  def builds(self):
-    builds = self._read_manifest()
-    buildlist = []
-
-    for build in builds:
-      if len(build) == 11:
-        buildlist.append({
-                           'tree': build[0],
-                           'os': build[1],
-                           'platform': build[2],
-                           'buildtype': build[3],
-                           'builddate': build[4],
-                           'test': build[5],
-                           'logurl': build[6],
-                           'timestamp': build[7],
-                           'buildername': build[8],
-                           'mobile': build[9],
-                           'talos': build[10],
-                         })
-      else:
-        buildlist.append({
-                          'tree': build[0],
-                          'platform': build[1],
-                          'buildlogurl': build[2],
-                          'buildtype': build[3],
-                          'builddate': build[4],
-                          'timestamp': build[5],
-                          'builder': build[6],
-                          'buildnumber': build[7],
-                          'mobile': build[8],
-                          'buildername': build[9],
-                        })
-
-    return buildlist
-
   def addBuild(self, builddata):
     """Add the build to the build manifest.
     """
 
-    builds = self._read_manifest()
     if self.logger:
         self.logger.info('adding %s' % repr(self.buildTuple(builddata)))
-    builds.add(self.buildTuple(builddata))
-    self._write_manifest(builds)
-
-  def removeBuild(self, builddata):
-    """Remove the build form the build manifest, if it's present.
-    """
-
-    if self.logger:
-        self.logger.info('removing %s' % repr(self.buildTuple(builddata)))
-    builds = self._read_manifest()
-    build = self.buildTuple(builddata)
-    if build in builds:
-      builds.remove(build)
-      self._write_manifest(builds)
+    self.queue.put(builddata)
 
 
 class TestLogThread(Thread):
 
   def __init__(self, manifest, lock, log_avail_callback,
                buildlog_avail_callback=None,
-               logger=None, buildmanifest=None):
+               logger=None, buildmanifest=None, queue=None):
     super(TestLogThread, self).__init__()
     self.builddata = None
     self.buildmanifest = buildmanifest
@@ -197,6 +109,8 @@ class TestLogThread(Thread):
     self.log_avail_callback = log_avail_callback
     self.buildlog_avail_callback = buildlog_avail_callback
     self.logger = logger
+    self.queue = queue
+    self.daemon = True
 
   def getUrlInfo(self, url):
     """Return a (code, content_length) tuple from making an
@@ -235,36 +149,37 @@ class TestLogThread(Thread):
     while True:
 
       try:
-        buildlist = self.buildmanifest.builds
-        for builddata in buildlist:
 
-          urlfield = 'logurl' if 'logurl' in builddata else 'buildlogurl'
-          if urlfield in builddata:
-            code, content_length = self.getUrlInfo(builddata[urlfield])
-          else:
-            self.buildmanifest.removeBuild(builddata)
-            continue
+        try:
+          builddata = self.queue.get_nowait()
+        except Empty:
+          time.sleep(30)
+          continue
 
-          if code == 200:
-            if urlfield == 'logurl':
-              self.log_avail_callback(builddata)
-            elif urlfield == 'buildlogurl' and self.buildlog_avail_callback is not None:
-              self.buildlog_avail_callback(builddata)
+        urlfield = 'logurl' if 'logurl' in builddata else 'buildlogurl'
+        if urlfield in builddata:
+          code, content_length = self.getUrlInfo(builddata[urlfield])
+        else:
+          continue
 
-            # remove the completed log from the manifest
-            self.buildmanifest.removeBuild(builddata)
+        if code == 200:
+          if urlfield == 'logurl':
+            self.log_avail_callback(builddata)
+          elif urlfield == 'buildlogurl' and self.buildlog_avail_callback is not None:
+            self.buildlog_avail_callback(builddata)
 
-          else:
-            # some HTTP error code; ignore unless we've hit the max time
-            timestamp = datetime.datetime.strptime(builddata['timestamp'], '%Y%m%d%H%M%S')
-            if datetime.datetime.now() - timestamp > datetime.timedelta(seconds=600):
-              # XXX: log error
-              self.buildmanifest.removeBuild(builddata)
+        else:
+          # some HTTP error code; ignore unless we've hit the max time
+          timestamp = datetime.datetime.strptime(builddata['timestamp'], '%Y%m%d%H%M%S')
+          if datetime.datetime.now() - timestamp < datetime.timedelta(seconds=600):
+            # XXX: log error
+            self.queue.put(builddata)
 
       except Exception, inst:
         if self.logger:
           self.logger.exception(inst)
 
+      time.sleep(10)
 
 class BadPulseMessageError(Exception):
 
@@ -308,6 +223,7 @@ class PulseBuildMonitor(object):
       self.fragments.append(self.talosFragment)
 
     self.lock = RLock()
+    self.queue = Queue()
 
     if self.notify_on_logs:
       # delete any old manifest file
@@ -315,7 +231,8 @@ class PulseBuildMonitor(object):
         os.remove(self.manifest)
 
       # track what files are pending in a manifest
-      self.buildmanifest = BuildManifest(self.manifest, self.lock, self.logger)
+      self.buildmanifest = BuildManifest(self.logger,
+                                         self.queue)
 
       # create a new thread to handle watching for logs
       self.logthread = TestLogThread(self.manifest,
@@ -323,7 +240,8 @@ class PulseBuildMonitor(object):
                                      self.onTestLogAvailable,
                                      buildlog_avail_callback=self.onBuildLogAvailable,
                                      logger=self.logger,
-                                     buildmanifest=self.buildmanifest)
+                                     buildmanifest=self.buildmanifest,
+                                     queue=self.queue)
       self.logthread.start()
 
     # setup the pulse consumer
