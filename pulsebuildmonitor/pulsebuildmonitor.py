@@ -48,7 +48,7 @@ except:
   import simplejson as json
 from dateutil.parser import parse
 from mozillapulse import consumers
-from Queue import Queue
+from Queue import Queue, Empty
 from threading import Thread, RLock
 from urlparse import urlparse
 
