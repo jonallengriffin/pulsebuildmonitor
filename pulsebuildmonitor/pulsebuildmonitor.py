@@ -88,13 +88,21 @@ class BuildManifest(object):
               builddata['buildername'],
               )
 
+  def _convert_unicode_values(self, obj):
+    for key in obj:
+      if isinstance(obj[key], unicode):
+        obj[key] = str(obj[key])
+    return obj
+
   def addBuild(self, builddata):
     """Add the build to the build manifest.
     """
 
     if self.logger:
-        self.logger.info('adding %s' % repr(self.buildTuple(builddata)))
-    self.queue.put(builddata)
+      self.logger.info('adding %s' % repr(self.buildTuple(builddata)))
+    if not isinstance(builddata, dict):
+      raise Exception('wrong data type passed to addBuild: %s' % type(builddata))
+    self.queue.put(self._convert_unicode_values(builddata))
 
 
 class TestLogThread(Thread):
@@ -144,7 +152,7 @@ class TestLogThread(Thread):
       return (-1, -1)
 
   def run(self):
-
+    self.logger.info('test log thread started')
     # loop forever
     while True:
 
@@ -153,12 +161,15 @@ class TestLogThread(Thread):
         try:
           builddata = self.queue.get_nowait()
         except Empty:
+          self.logger.info('no builds, going to sleep')
           time.sleep(30)
+          self.logger.info('end sleep')
           continue
+        self.logger.info('inspecting %s' % repr(builddata))
 
         urlfield = 'logurl' if 'logurl' in builddata else 'buildlogurl'
         if urlfield in builddata:
-          code, content_length = self.getUrlInfo(builddata[urlfield])
+          code, content_length = self.getUrlInfo(str(builddata[urlfield]))
         else:
           continue
 
