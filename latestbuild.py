@@ -32,6 +32,8 @@ class LatestBuildMonitor(object):
         #print json.dumps(builddata, indent=2)
         #print '========================================================='
         self.builds[builddata['tree']][builddata['platform']].update({builddata['buildtype']:  builddata['buildurl']})
+        if not builddata['buildurl'] and self.logger:
+          self.logger.error('no buildurl:\n%s' % json.dumps(builddata, indent=2))
 
     def testCallback(self, builddata):
         if False:
