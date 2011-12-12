@@ -42,8 +42,6 @@ class LatestBuildMonitor(object):
 
     def pulseCallback(self, data):
         key = data['_meta']['routing_key']
-        if 'win' in key:
-            print key
 
     def start(self):
         monitor = start_pulse_monitor(buildCallback=self.buildCallback,

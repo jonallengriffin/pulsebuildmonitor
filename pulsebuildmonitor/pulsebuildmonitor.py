@@ -202,9 +202,6 @@ class BadPulseMessageError(Exception):
 
 
 class PulseBuildMonitor(object):
-  unittestFragment = 'maybe_rebooting.finished'
-  talosFragment = 'reboot.finished'
-  androidFragment = 'reboot_device.finished'
   talosTests = [
     '-tpan',
     '-tdhtml_nochrome',
@@ -213,7 +210,7 @@ class PulseBuildMonitor(object):
     '-tp4m',
     '-ts',
     '-twinopen',
-    '-tzoom'
+    '-tzoom',
   ]
 
   def __init__(self, label=None, tree='mozilla-central',
@@ -229,9 +226,6 @@ class PulseBuildMonitor(object):
     self.manifest = os.path.abspath(manifest)
     self.logger = logger
     self.mobile = mobile
-    self.fragments = [self.unittestFragment, self.androidFragment]
-    if includeTalos:
-      self.fragments.append(self.talosFragment)
 
     self.lock = RLock()
     self.queue = Queue()
@@ -259,7 +253,7 @@ class PulseBuildMonitor(object):
     if not self.label:
       raise Exception('label not defined')
     self.pulse = consumers.BuildConsumer(applabel=self.label)
-    self.pulse.configure(topic='build.#.step.#.finished',
+    self.pulse.configure(topic='#.finished',
                          callback=self.pulseMessageReceived,
                          durable=self.durable)
 
@@ -356,10 +350,6 @@ class PulseBuildMonitor(object):
     # the routing_key
     key = data['_meta']['routing_key']
 
-    if not [x for x in self.fragments if x in key]:
-      message.ack()
-      return
-
     try:
       self.onPulseMessage(data)
 
@@ -399,7 +389,7 @@ class PulseBuildMonitor(object):
       stage_platform = None
       try:
         # scan the payload properties for items of interest
-        for property in data['payload']['properties']:
+        for property in data['payload']['build']['properties']:
 
           # look for buildid
           if property[0] == 'buildid':
@@ -457,8 +447,7 @@ class PulseBuildMonitor(object):
       match = self.unittestRe.match(key)
       if match:
         builddata['os'] = match.groups()[2]
-        builddata['talos'] = self.talosFragment in key or \
-                             bool(len(filter(lambda x: x in key, self.talosTests)))
+        builddata['talos'] = 'talos' in builddata['buildername'] #bool(len(filter(lambda x: x in key, self.talosTests)))
         if stage_platform and (builddata['talos'] or 'android' in builddata['os']):
           builddata['platform'] = stage_platform
         # store some more metadata in the builddata dict
