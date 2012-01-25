@@ -429,11 +429,11 @@ class PulseBuildMonitor(object):
               # we don't want any '-pgo' suffix here
               stage_platform = stage_platform[0:stage_platform.find('-pgo')]
 
-        if builddata['buildurl'] is None:
-          raise Exception('No buildurl!')
-
       except Exception, inst:
         raise BadPulseMessageError(data, traceback.format_exc(2))
+
+      if builddata['buildurl'] is None:
+        raise BadPulseMessageError(key, 'No buildurl!')
 
       # see if this message is from mobile
       if (self.mobile is not None and self.mobile != builddata['mobile']):
