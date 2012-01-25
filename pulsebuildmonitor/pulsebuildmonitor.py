@@ -429,6 +429,9 @@ class PulseBuildMonitor(object):
               # we don't want any '-pgo' suffix here
               stage_platform = stage_platform[0:stage_platform.find('-pgo')]
 
+        if builddata['buildurl'] is None:
+          raise Exception('No buildurl!')
+
       except Exception, inst:
         raise BadPulseMessageError(data, traceback.format_exc(2))
 
@@ -518,8 +521,8 @@ class PulseBuildMonitor(object):
       traceback.print_exc()
 
     except Exception, inst:
+      message.ack()
       if self.logger:
-        message.ack()
         self.logger.exception(inst)
         traceback.print_exc()
       else:
