@@ -156,10 +156,15 @@ class TestLogThread(Thread):
     # loop forever
     while True:
 
+      i = 0
       try:
 
         try:
           builddata = self.queue.get_nowait()
+          i += 1
+          # pause after every 10th check to avoid overloading the server
+          if i % 10 == 0:
+            time.sleep(10)
         except Empty:
           self.logger.info('no builds, going to sleep')
           time.sleep(30)
