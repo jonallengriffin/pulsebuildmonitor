@@ -32,8 +32,9 @@ class LatestBuildMonitor(object):
         #print json.dumps(builddata, indent=2)
         #print '========================================================='
         self.builds[builddata['tree']][builddata['platform']].update({builddata['buildtype']:  builddata['buildurl']})
-        if not builddata['buildurl'] and self.logger:
-          self.logger.error('no buildurl:\n%s' % json.dumps(builddata, indent=2))
+        if not builddata['buildurl']:
+          if self.logger:
+            self.logger.error('no buildurl:\n%s' % json.dumps(builddata, indent=2))
 
     def testCallback(self, builddata):
         if False:
@@ -49,7 +50,7 @@ class LatestBuildMonitor(object):
         monitor = start_pulse_monitor(buildCallback=self.buildCallback,
                                       testCallback=self.testCallback,
                                       pulseCallback=self.pulseCallback,
-                                      tree=['mozilla-inbound', 'birch', 'mozilla-central'])
+                                      trees=None)
 
         from wsgiref.simple_server import make_server, WSGIRequestHandler
 
