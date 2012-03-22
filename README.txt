@@ -32,7 +32,7 @@ To use the monitor, you just call a single convenience function:
                                 pulseCallback=None,
                                 label=None,
                                 trees=['mozilla-central'],
-                                platform=None,
+                                platforms=None,
                                 products=None,
                                 buildtypes=None,
                                 tests=None,
@@ -171,3 +171,20 @@ execution of the monitor thread itself.  Thus, these exceptions will
 not cause your program to terminate; you'll need to consult the log
 (or watch stdout) to determine if your callbacks are raising exceptions
 or not.
+
+
+Upgrading from earlier versions
+===============================
+
+There are some minor API changes to pulsebuildmonitor 0.6.  When creating
+a pulsebuildmonitor, some of the parameters have changed:
+
+* 'buildtype' is now 'buildtypes', and is a list
+* 'tree' is now 'trees', and is a list (previously it was a list or a string)
+* 'mobile' has been removed (you can filter on the mobile product using products=['mobile'])
+* 'includeTalos' is now just 'talos'
+* there are some new arguments, see the 'Usage' section above
+
+Additionally, pulsebuildmonitor now requires mozillapulse >= 0.6.  You can
+install the latest using 'easy_install mozillapulse', or grab a copy from
+http://hg.mozilla.org/automation/mozillapulse/
