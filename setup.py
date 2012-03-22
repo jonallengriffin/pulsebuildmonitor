@@ -6,9 +6,9 @@
 import sys
 from setuptools import setup, find_packages
 
-version = '0.6'
+version = '0.61'
 
-deps = ['python-dateutil == 1.5', 'MozillaPulse == 0.6']
+deps = ['python-dateutil == 1.5', 'MozillaPulse >= 0.6']
 
 # we only support python 2 right now
 assert sys.version_info[0] == 2 and sys.version_info[1] >= 5
