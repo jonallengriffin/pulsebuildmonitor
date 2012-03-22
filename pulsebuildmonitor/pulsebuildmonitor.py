@@ -69,7 +69,7 @@ class PulseBuildMonitor(object):
     if isinstance(self.trees, basestring):
       self.trees = [self.trees]
 
-  def purgePulseQueue(self):
+  def purge_pulse_queue(self):
     """Purge any messages from the queue.  This has no effect if you're not
        using a durable queue.
     """
@@ -89,63 +89,31 @@ class PulseBuildMonitor(object):
     """
     self.pulse.listen()
 
-  def onBuildComplete(self, builddata):
-    """Called whenever a buildbot build is finished.
-
-       builddata is a dict with the following keys:
-        tree:      mozilla-central, etc.
-        branch:    the hg branch the build was made from
-        builddate: the buildbot builddate in seconds since epoch format
-        buildid:   the buildbot buildid
-        timestamp: the datetime the pulse message was received, in
-                   'YYYYMMDDHHMMSS' format
-        platform:  generic platform, e.g., linux, linux64, win32, macosx64
-        buildurl:  full url to the build on http://stage.mozilla.org
-        buildtype: one of: debug, opt, pgo
-        testsurl:  full url to the test bundle
-        key:       the pulse routing_key that was sent with this message
+  def on_build_complete(self, builddata):
+    """Called whenever a buildbot build is finished. See README.txt
+       for an explanation of builddata.
     """
     pass
 
-  def onBuildLogAvailable(self, builddata):
-    """Called whenever a buildlog is available; same parameters as above,
-       plus:
-         buildlogurl: full url to the build log
-    """
-    pass
+  onBuildComplete = on_build_complete
+  onBuildLogAvailable = on_build_complete
 
-  def onTestComplete(self, builddata):
-    """Called whenver a buildbot test is finished.  Note that
-       the test's logfile is not guaranteed to be availble yet; use
-       onTestLogAvailable() to receive notifications when new test logs
-       are available to download.
-
-       builddata is a dict with the following keys:
-        tree:        mozilla-central, etc.
-        branch:      the hg branch the build was made from
-        os:          specific OS, e.g., win7, xp, fedora64, snowleopard
-        platform:    generic platform, e.g., linux, linux64, win32, macosx64
-        buildtype:   one of: debug, opt, pgo
-        builddate:   the buildbot builddate in seconds since epoch format
-        test:        the name of the test, e.g., reftest, mochitest-other
-        timestamp:   the datetime the pulse message was received, in 
-                     'YYYYMMDDHHMMSS' format
-        testsurl:    full url to the test bundle
-        logurl:      full url to the logfile on http://stage.mozilla.org
-    """
-    pass
-
-  def onTestLogAvailable(self, builddata):
+  def on_test_complete(self, builddata):
     """Called whenever a test log becomes available on the FTP site.  See
-       onTestComplete for explanation of the builddata parameter.
+       README.txt for explanation of builddata.
     """
     pass
+
+  onTestLogAvailable = on_test_complete
+  onTestComplete = on_test_complete
 
   def on_pulse_message(self, data):
     """Called for every pulse message that we receive; 'data' is the
        unprocessed payload from pulse.
     """
     pass
+
+  onPulseMessage = on_pulse_message
 
   def pulse_message_received(self, data, message):
     """Called whenever our pulse consumer receives a message.
@@ -189,7 +157,7 @@ class PulseBuildMonitor(object):
           if self.products and product not in self.products:
             return
 
-          self.onTestLogAvailable(data['payload'])
+          self.on_test_complete(data['payload'])
 
       elif key.startswith('build'):
         if self.builds:
@@ -228,7 +196,7 @@ class PulseBuildMonitor(object):
             else:
               raise Exception('buildtags must be a list of strings or a list of lists')
 
-          self.onBuildComplete(data['payload'])
+          self.on_build_complete(data['payload'])
 
       else:
         raise BadPulseMessageError(key)

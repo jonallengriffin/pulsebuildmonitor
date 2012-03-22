@@ -74,18 +74,18 @@ class FactoryBuildMonitor(PulseBuildMonitor):
     def start_callback_thread(self, callback, *args):
         callback(*args)
 
-    def onPulseMessage(self, data):
+    def on_pulse_message(self, data):
         if self.pulseCallback:
             callbackThread = threading.Thread(target=self.start_callback_thread, args=(self.pulseCallback, data))
             callbackThread.daemon = True
             callbackThread.start()
 
-    def onBuildComplete(self, builddata):
+    def on_build_complete(self, builddata):
         callbackThread = threading.Thread(target=self.start_callback_thread, args=(self.buildCallback, builddata))
         callbackThread.daemon = True
         callbackThread.start()
 
-    def onTestLogAvailable(self, builddata):
+    def on_test_complete(self, builddata):
         callbackThread = threading.Thread(target=self.start_callback_thread, args=(self.testCallback, builddata))
         callbackThread.daemon = True
         callbackThread.start()
