@@ -6,7 +6,7 @@
 import sys
 from setuptools import setup, find_packages
 
-version = '0.61'
+version = '0.62'
 
 deps = ['python-dateutil == 1.5', 'MozillaPulse >= 0.6']
 

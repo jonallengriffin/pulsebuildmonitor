@@ -175,7 +175,7 @@ class PulseBuildMonitor(object):
             return
           if self.buildtypes and buildtype not in self.buildtypes:
             return
-          if self.platforms and data['payload']['product'] not in self.platforms:
+          if self.products and data['payload']['product'] not in self.products:
             return
           if self.buildtags:
             if isinstance(self.buildtags[0], basestring):
